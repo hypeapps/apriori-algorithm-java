@@ -1,6 +1,6 @@
 package pl.hypeapp;
 
-import javafx.util.Pair;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,6 +13,7 @@ public class AprioriAlgorithm {
     private float confidence;
     private List<String[]> transactionBase;
     private List<String> mostFrequentOneItemSet;
+    private List<Pair<String, String>> pairs;
 
     public AprioriAlgorithm(float minimumSupport, float confidence, List<String[]> transactionBase) {
         this.transactionBase = transactionBase;
@@ -39,7 +40,8 @@ public class AprioriAlgorithm {
 
     public void generateSuperFormula() {
         mostFrequentOneItemSet = getUniqueItemsWithSupport(support);
-        mostFrequentOneItemSet.forEach(System.out::println);
+        pairs = generatePairs(mostFrequentOneItemSet);
+//        mostFrequentOneItemSet.forEach(System.out::println);
     }
 
     private List<String> getUniqueItemsWithSupport(int support) {
@@ -59,7 +61,7 @@ public class AprioriAlgorithm {
                 frequentOfItems.put(item, Collections.frequency(allItems, item));
             }
         });
-        frequentOfItems.forEach((item, freq) -> System.out.println(item + " " + freq));
+        frequentOfItems.forEach((item, freq) -> System.out.println("Frequency " + item + ": " + freq));
         return frequentOfItems;
     }
 
@@ -75,9 +77,18 @@ public class AprioriAlgorithm {
 
     private List<Pair<String, String>> generatePairs(List<String> items) {
         List<Pair<String, String>> pairs = new ArrayList<>();
-        items.forEach((item) -> {
-
+        String left, right;
+        for (int i = 0; i < items.size(); i++) {
+            left = items.get(i);
+            for (int nextItem = i + 1; nextItem < items.size(); nextItem++) {
+                right = items.get(nextItem);
+                Pair<String, String> newPair = Pair.of(left, right);
+                pairs.add(newPair);
+            }
+        }
+        pairs.forEach((pair) -> {
+            System.out.println(pair.getLeft() + " " + pair.getRight());
         });
-        return null;
+        return pairs;
     }
 }
