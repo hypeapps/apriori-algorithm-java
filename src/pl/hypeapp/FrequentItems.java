@@ -7,6 +7,7 @@ import java.util.*;
 import static java.util.Arrays.asList;
 
 public class FrequentItems {
+    private static final int EMPTY_VALUE = 0;
     private List<String[]> inputItems;
     private Set<String> uniqueItems;
     private List<String[]> powerSet;
@@ -23,7 +24,7 @@ public class FrequentItems {
         return generateFrequencySets(powerSet);
     }
 
-    private Set<String> generateAllUniqueItems() {
+    public Set<String> generateAllUniqueItems() {
         inputItems.forEach((row) -> {
             asList(row).forEach((item) -> uniqueItems.add(item));
         });
@@ -37,6 +38,7 @@ public class FrequentItems {
         Sets.powerSet(set).forEach((powerSetRow) -> {
             powerSet.add(powerSetRow.toArray(new String[powerSetRow.size()]));
         });
+        powerSet.remove(EMPTY_VALUE);
         powerSet.sort((o1, o2) -> o1.length > o2.length ? 1 : (o1.length < o2.length) ? -1 : 0);
         System.out.println("---- POWER SET ----");
         powerSet.forEach((item) -> System.out.println(Arrays.toString(item)));
