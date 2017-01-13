@@ -32,14 +32,14 @@ public class FrequentItems {
         return uniqueItems;
     }
 
-    private List<String[]> generatePowerSet(Set<String> set) {
+    public List<String[]> generatePowerSet(Set<String> set) {
         LinkedList<String[]> powerSet = new LinkedList<>();
         Sets.powerSet(set).forEach((powerSetRow) -> {
             powerSet.add(powerSetRow.toArray(new String[powerSetRow.size()]));
         });
         powerSet.removeFirst();
         powerSet.sort((o1, o2) -> o1.length > o2.length ? 1 : (o1.length < o2.length) ? -1 : 0);
-        System.out.println("---- POWER SET ----");
+        System.out.println("---- POWER SET OF " + set.toString() + " ----");
         powerSet.forEach((item) -> System.out.println(Arrays.toString(item)));
         return powerSet;
     }
