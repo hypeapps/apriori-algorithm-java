@@ -1,24 +1,28 @@
 package pl.hypeapp;
 
+import com.google.common.collect.Sets;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class AprioriAlgorithm {
     private float minimumSupport;
     private int support;
-    private float confidence;
+    private float minimumConfidence;
     private List<String[]> transactionBase;
-    private List<String> mostFrequentOneItemSet;
-    private List<Pair<String, String>> pairs;
+    private HashMap<String[], Integer> mostFrequentSets;
+    private LinkedList<Pair<String[], Integer>> itemsWithMinSupport;
+    private List<Pair<String, Float>> strongRules;
+    private FrequentItems frequentItems;
 
-    public AprioriAlgorithm(float minimumSupport, float confidence, List<String[]> transactionBase) {
+    public AprioriAlgorithm(float minimumSupport, float minimumConfidence, List<String[]> transactionBase) {
         this.transactionBase = transactionBase;
-        this.confidence = confidence;
-        this.minimumSupport = minimumSupport;
+        this.minimumConfidence = minimumConfidence / 100.0f;
+        this.minimumSupport = minimumSupport / 100.0f;
+        ;
+        this.mostFrequentSets = new HashMap<>();
+        this.itemsWithMinSupport = new LinkedList<>();
+        this.strongRules = new ArrayList<>();
         this.support = (int) (this.transactionBase.size() * (minimumSupport / 100.0f));
     }
 
@@ -31,64 +35,110 @@ public class AprioriAlgorithm {
     }
 
     public float getConfidence() {
-        return this.confidence;
+        return this.minimumConfidence;
     }
 
-    public void setConfidence(float confidence) {
-        this.confidence = confidence;
+    public void setConfidence(float minimumConfidence) {
+        this.minimumConfidence = minimumConfidence;
     }
 
     public void generateSuperFormula() {
-        mostFrequentOneItemSet = getUniqueItemsWithSupport(support);
-        pairs = generatePairs(mostFrequentOneItemSet);
-//        mostFrequentOneItemSet.forEach(System.out::println);
+        List<String[]> transactionBase1 = new ArrayList<>();
+        transactionBase1.add(new String[]{"1", "3", "4"});
+        transactionBase1.add(new String[]{"2", "3", "5"});
+        transactionBase1.add(new String[]{"1", "2", "3", "5"});
+        transactionBase1.add(new String[]{"2", "5"});
+        transactionBase1.add(new String[]{"1", "3", "5"});
+        frequentItems = new FrequentItems(transactionBase);
+        mostFrequentSets.putAll(getMostFrequentSets(frequentItems.getItemSetsFrequency()));
+        generateStrongRulesWithMinConfidence(mostFrequentSets);
     }
 
-    private List<String> getUniqueItemsWithSupport(int support) {
-        List<String> uniqueItems = new ArrayList<>();
-        HashMap<String, Integer> frequentOneItemSet = generateFrequentOneItemSet();
-        frequentOneItemSet.forEach((item, frequency) -> {
-            if (frequency >= support) uniqueItems.add(item);
-        });
-        return uniqueItems;
-    }
-
-    private HashMap<String, Integer> generateFrequentOneItemSet() {
-        List<String> allItems = getAllItems();
-        HashMap<String, Integer> frequentOfItems = new HashMap<>();
-        allItems.forEach((item) -> {
-            if (!frequentOfItems.containsKey(item)) {
-                frequentOfItems.put(item, Collections.frequency(allItems, item));
+    private HashMap<String[], Integer> getMostFrequentSets(List<HashMap<String[], Integer>> itemSetsFrequency) {
+        LinkedList<Pair<String[], Integer>> mostFrequentItemsWithMinSupport = getMostFrequentItemsWithMinSupport(itemSetsFrequency);
+        HashMap<String[], Integer> mostFrequentSets = new HashMap<>();
+        int lengthOfLastMostFrequentSet = mostFrequentItemsWithMinSupport.getLast().getLeft().length;
+        mostFrequentItemsWithMinSupport.forEach((mostFrequentSet) -> {
+            if (mostFrequentSet.getLeft().length == lengthOfLastMostFrequentSet) {
+                mostFrequentSets.put(mostFrequentSet.getLeft(), mostFrequentSet.getRight());
             }
         });
-        frequentOfItems.forEach((item, freq) -> System.out.println("Frequency " + item + ": " + freq));
-        return frequentOfItems;
+        System.out.println("---- MOST FREQUENT SETS IN TRANSACTION BASE WITH MIN SUPPORT ----");
+        mostFrequentSets.forEach((k, v) -> System.out.println(Arrays.toString(k) + " " + v));
+        return mostFrequentSets;
     }
 
-    private List<String> getAllItems() {
-        List<String> items = new ArrayList<>();
-        transactionBase.forEach((transactionItem) -> {
-            for (String item : transactionItem) {
-                items.add(item);
-            }
-        });
-        return items;
+    private LinkedList<Pair<String[], Integer>> getMostFrequentItemsWithMinSupport(List<HashMap<String[], Integer>> itemSetsFrequency) {
+        itemSetsFrequency.forEach((itemFrequency) ->
+                itemFrequency.forEach((item, frequency) -> {
+                    if (frequency >= support) {
+                        Pair<String[], Integer> itemFrequencyMap = Pair.of(item, frequency);
+                        itemsWithMinSupport.add(itemFrequencyMap);
+                    }
+                }));
+        System.out.println("---- MOST FREQUENT ITEMS IN TRANSACTION BASE WITH MIN SUPPORT ----");
+        itemsWithMinSupport.forEach((itemFrequencySet) -> System.out.println(Arrays.toString(itemFrequencySet.getLeft()) + " " + itemFrequencySet.getRight()));
+        return itemsWithMinSupport;
     }
 
-    private List<Pair<String, String>> generatePairs(List<String> items) {
-        List<Pair<String, String>> pairs = new ArrayList<>();
-        String left, right;
-        for (int i = 0; i < items.size(); i++) {
-            left = items.get(i);
-            for (int nextItem = i + 1; nextItem < items.size(); nextItem++) {
-                right = items.get(nextItem);
-                Pair<String, String> newPair = Pair.of(left, right);
-                pairs.add(newPair);
-            }
+    private List<Pair<String, Float>> generateStrongRulesWithMinConfidence(HashMap<String[], Integer> mostFrequentSets) {
+        List<HashMap<String[], String[]>> lattice = generateLattice(mostFrequentSets);
+        int iterator = 0;
+        for (Map.Entry<String[], Integer> mostFrequentSetFrequency : mostFrequentSets.entrySet()) {
+            lattice.get(iterator).forEach((k, v) -> itemsWithMinSupport.forEach((itemFrequencyPair) -> {
+                if (Arrays.asList(itemFrequencyPair.getLeft()).equals(Arrays.asList(k))) {
+                    float confidence = calculateConfidence(mostFrequentSetFrequency.getValue(), itemFrequencyPair.getRight());
+                    if (confidence >= minimumConfidence) {
+                        String rule = createRule(k, v, confidence);
+                        strongRules.add(Pair.of(rule, confidence));
+                    }
+                }
+            }));
+            iterator += 1;
         }
-        pairs.forEach((pair) -> {
-            System.out.println(pair.getLeft() + " " + pair.getRight());
+        System.out.println("---- STRONG RULES ----");
+        strongRules.forEach((rule) -> {
+            System.out.println(rule.getLeft());
         });
-        return pairs;
+        return null;
+    }
+
+    private float calculateConfidence(Integer xy, Integer x) {
+        return (float) xy / x;
+    }
+
+    private String createRule(String[] left, String[] right, float confidence) {
+        StringBuffer stringBuffer = new StringBuffer();
+        stringBuffer.append(Arrays.toString(left)).append(" -> ").append(Arrays.toString(right)).append(" ").append(confidence);
+        return stringBuffer.toString();
+    }
+
+    private List<HashMap<String[], String[]>> generateLattice(HashMap<String[], Integer> mostFrequentSetsWithFrequnecy) {
+        List<LinkedList<String[]>> powerSets = new ArrayList<>();
+        List<HashMap<String[], String[]>> lattice = new ArrayList<>();
+        List<String[]> mostFrequentSets = new ArrayList<>();
+        mostFrequentSetsWithFrequnecy.forEach((k, v) -> mostFrequentSets.add(k));
+        mostFrequentSets.forEach((mostFrequentSet) -> {
+            Set<String> set = new HashSet<>();
+            Collections.addAll(set, mostFrequentSet);
+            powerSets.add((LinkedList) frequentItems.generatePowerSet(set));
+        });
+        int iterator = 0;
+        for (LinkedList<String[]> powerSet : powerSets) {
+            powerSet.removeLast();
+            Set<String> mostFrequentSet = new HashSet<>(Arrays.asList(mostFrequentSets.get(iterator)));
+            HashMap<String[], String[]> latticeItem = new HashMap<>();
+            for (String[] itemInPowerSet : powerSet) {
+                Set<String> powerItemSet = new HashSet<>(Arrays.asList(itemInPowerSet));
+                Set<String> differenceSet = Sets.difference(mostFrequentSet, powerItemSet);
+                String[] diff = differenceSet.toArray(new String[differenceSet.size()]);
+                latticeItem.put(itemInPowerSet, diff);
+            }
+            lattice.add(latticeItem);
+            iterator += 1;
+        }
+        System.out.println("---- LATTICE ----");
+        lattice.forEach((singleLattice) -> singleLattice.forEach((k, v) -> System.out.println(Arrays.toString(k) + " -> " + Arrays.toString(v))));
+        return lattice;
     }
 }
