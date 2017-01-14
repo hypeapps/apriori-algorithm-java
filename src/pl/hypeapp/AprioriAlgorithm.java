@@ -19,7 +19,6 @@ public class AprioriAlgorithm {
         this.transactionBase = transactionBase;
         this.minimumConfidence = minimumConfidence / 100.0f;
         this.minimumSupport = minimumSupport / 100.0f;
-        ;
         this.mostFrequentSets = new HashMap<>();
         this.itemsWithMinSupport = new LinkedList<>();
         this.strongRules = new ArrayList<>();
@@ -42,16 +41,10 @@ public class AprioriAlgorithm {
         this.minimumConfidence = minimumConfidence;
     }
 
-    public void generateSuperFormula() {
-        List<String[]> transactionBase1 = new ArrayList<>();
-        transactionBase1.add(new String[]{"1", "3", "4"});
-        transactionBase1.add(new String[]{"2", "3", "5"});
-        transactionBase1.add(new String[]{"1", "2", "3", "5"});
-        transactionBase1.add(new String[]{"2", "5"});
-        transactionBase1.add(new String[]{"1", "3", "5"});
+    public List<Pair<String, Float>> generateSuperFormula() {
         frequentItems = new FrequentItems(transactionBase);
         mostFrequentSets.putAll(getMostFrequentSets(frequentItems.getItemSetsFrequency()));
-        generateStrongRulesWithMinConfidence(mostFrequentSets);
+        return generateStrongRulesWithMinConfidence(mostFrequentSets);
     }
 
     private HashMap<String[], Integer> getMostFrequentSets(List<HashMap<String[], Integer>> itemSetsFrequency) {
@@ -89,7 +82,7 @@ public class AprioriAlgorithm {
                 if (Arrays.asList(itemFrequencyPair.getLeft()).equals(Arrays.asList(k))) {
                     float confidence = calculateConfidence(mostFrequentSetFrequency.getValue(), itemFrequencyPair.getRight());
                     if (confidence >= minimumConfidence) {
-                        String rule = createRule(k, v, confidence);
+                        String rule = createRule(k, v);
                         strongRules.add(Pair.of(rule, confidence));
                     }
                 }
@@ -98,26 +91,26 @@ public class AprioriAlgorithm {
         }
         System.out.println("---- STRONG RULES ----");
         strongRules.forEach((rule) -> {
-            System.out.println(rule.getLeft());
+            System.out.println(rule.getLeft() + " " + rule.getRight());
         });
-        return null;
+        return strongRules;
     }
 
     private float calculateConfidence(Integer xy, Integer x) {
         return (float) xy / x;
     }
 
-    private String createRule(String[] left, String[] right, float confidence) {
+    private String createRule(String[] left, String[] right) {
         StringBuffer stringBuffer = new StringBuffer();
-        stringBuffer.append(Arrays.toString(left)).append(" -> ").append(Arrays.toString(right)).append(" ").append(confidence);
+        stringBuffer.append(Arrays.toString(left)).append(" -> ").append(Arrays.toString(right));
         return stringBuffer.toString();
     }
 
-    private List<HashMap<String[], String[]>> generateLattice(HashMap<String[], Integer> mostFrequentSetsWithFrequnecy) {
+    private List<HashMap<String[], String[]>> generateLattice(HashMap<String[], Integer> mostFrequentSetsWithFrequency) {
         List<LinkedList<String[]>> powerSets = new ArrayList<>();
         List<HashMap<String[], String[]>> lattice = new ArrayList<>();
         List<String[]> mostFrequentSets = new ArrayList<>();
-        mostFrequentSetsWithFrequnecy.forEach((k, v) -> mostFrequentSets.add(k));
+        mostFrequentSetsWithFrequency.forEach((k, v) -> mostFrequentSets.add(k));
         mostFrequentSets.forEach((mostFrequentSet) -> {
             Set<String> set = new HashSet<>();
             Collections.addAll(set, mostFrequentSet);
