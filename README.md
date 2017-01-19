@@ -1,4 +1,4 @@
-# Apriori-algorithm-java
+# Apriori algorithm
 
 The whole point of the algorithm (and data mining, in general) is to extract useful information from large amounts of data. For example, the information that a customer who purchases a keyboard also tends to buy a mouse at the same time.
 
