@@ -24,9 +24,7 @@ public class FrequentItems {
     }
 
     public Set<String> generateAllUniqueItems() {
-        inputItems.forEach((row) -> {
-            asList(row).forEach((item) -> uniqueItems.add(item));
-        });
+        inputItems.forEach((row) -> asList(row).forEach((item) -> uniqueItems.add(item)));
         System.out.println("---- UNIQUE ITEMS IN SET ----");
         uniqueItems.forEach(System.out::println);
         return uniqueItems;

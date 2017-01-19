@@ -33,11 +33,11 @@ public class AprioriAlgorithm {
         this.minimumSupport = minimumSupport;
     }
 
-    public float getConfidence() {
+    public float getMinimumConfidence() {
         return this.minimumConfidence;
     }
 
-    public void setConfidence(float minimumConfidence) {
+    public void setMinimumConfidence(float minimumConfidence) {
         this.minimumConfidence = minimumConfidence;
     }
 
